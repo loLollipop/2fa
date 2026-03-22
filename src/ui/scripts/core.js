@@ -500,7 +500,7 @@ export function getCoreCode() {
 
       contentLines.push('链接：' + otpauthURL);
 
-      const content = contentLines.join('\n');
+      const content = contentLines.join('\\n');
       const filename = safeName + '-' + account.replace(/[^a-zA-Z0-9@._-]+/g, '_') + '.txt';
 
       try {
