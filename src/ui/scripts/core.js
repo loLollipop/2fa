@@ -406,6 +406,32 @@ export function getCoreCode() {
       showCenterToast('⏭️', serviceName + ' 下一个验证码已复制到剪贴板');
     }
 
+    function buildOTPAuthURL(secret) {
+      const serviceName = (secret.name || '').trim();
+      const accountName = secret.account ? secret.account.trim() : '';
+      const label = accountName
+        ? encodeURIComponent(serviceName) + ':' + encodeURIComponent(accountName)
+        : encodeURIComponent(serviceName);
+      const type = (secret.type || 'TOTP').toUpperCase();
+      const algorithm = secret.algorithm || 'SHA1';
+      const digits = secret.digits || 6;
+      const params = new URLSearchParams({
+        secret: secret.secret.toUpperCase(),
+        issuer: serviceName,
+        algorithm: algorithm,
+        digits: digits.toString()
+      });
+
+      if (type === 'HOTP') {
+        params.set('counter', (secret.counter || 0).toString());
+      } else {
+        params.set('period', (secret.period || 30).toString());
+      }
+
+      const scheme = type === 'HOTP' ? 'hotp' : 'totp';
+      return 'otpauth://' + scheme + '/' + label + '?' + params.toString();
+    }
+
     // 复制OTP链接（otpauth://格式）
     async function copyOTPAuthURL(secretId) {
       const secret = secrets.find(s => s.id === secretId);
@@ -415,45 +441,7 @@ export function getCoreCode() {
       }
 
       try {
-        // 构建标签
-        const serviceName = secret.name.trim();
-        const accountName = secret.account ? secret.account.trim() : '';
-        let label;
-        if (accountName) {
-          label = encodeURIComponent(serviceName) + ':' + encodeURIComponent(accountName);
-        } else {
-          label = encodeURIComponent(serviceName);
-        }
-
-        // 根据类型构建不同的参数
-        const type = secret.type || 'TOTP';
-        let params;
-
-        switch (type.toUpperCase()) {
-          case 'HOTP':
-            params = new URLSearchParams({
-              secret: secret.secret.toUpperCase(),
-              issuer: serviceName,
-              algorithm: secret.algorithm || 'SHA1',
-              digits: (secret.digits || 6).toString(),
-              counter: (secret.counter || 0).toString()
-            });
-            break;
-          case 'TOTP':
-          default:
-            params = new URLSearchParams({
-              secret: secret.secret.toUpperCase(),
-              issuer: serviceName,
-              algorithm: secret.algorithm || 'SHA1',
-              digits: (secret.digits || 6).toString(),
-              period: (secret.period || 30).toString()
-            });
-            break;
-        }
-
-        // 根据类型选择正确的scheme
-        const scheme = type.toUpperCase() === 'HOTP' ? 'hotp' : 'totp';
-        const otpauthURL = 'otpauth://' + scheme + '/' + label + '?' + params.toString();
+        const otpauthURL = buildOTPAuthURL(secret);
 
         // 复制到剪贴板
         await navigator.clipboard.writeText(otpauthURL);
@@ -483,8 +471,36 @@ export function getCoreCode() {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '') || '2FA';
+      const type = (secret.type || 'TOTP').toUpperCase();
+      const algorithm = secret.algorithm || 'SHA1';
+      const digits = secret.digits || 6;
+      const period = secret.period || 30;
+      const counter = secret.counter || 0;
+      const otpauthURL = buildOTPAuthURL(secret);
+      const contentLines = [
+        '邮箱：' + account,
+        '密钥：' + secret.secret.toUpperCase()
+      ];
 
-      const content = '邮箱：' + account + '\n密钥：' + secret.secret.toUpperCase();
+      if (normalizedName) {
+        contentLines.push('服务：' + normalizedName);
+      }
+
+      if (type === 'HOTP' || digits !== 6 || algorithm !== 'SHA1' || period !== 30) {
+        contentLines.push('类型：' + type);
+        contentLines.push('算法：' + algorithm);
+        contentLines.push('位数：' + digits);
+
+        if (type === 'HOTP') {
+          contentLines.push('计数器：' + counter);
+        } else {
+          contentLines.push('周期：' + period);
+        }
+      }
+
+      contentLines.push('链接：' + otpauthURL);
+
+      const content = contentLines.join('\n');
       const filename = safeName + '-' + account.replace(/[^a-zA-Z0-9@._-]+/g, '_') + '.txt';
 
       try {
