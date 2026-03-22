@@ -466,11 +466,6 @@ export function getCoreCode() {
       }
 
       const normalizedName = (secret.name || '2FA').trim();
-      const safeName = normalizedName
-        .replace(/[\\/:*?"<>|]+/g, '-')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '') || '2FA';
       const type = (secret.type || 'TOTP').toUpperCase();
       const algorithm = secret.algorithm || 'SHA1';
       const digits = secret.digits || 6;
@@ -501,19 +496,23 @@ export function getCoreCode() {
       contentLines.push('链接：' + otpauthURL);
 
       const content = contentLines.join('\\n');
-      const filename = safeName + '-' + account.replace(/[^a-zA-Z0-9@._-]+/g, '_') + '.txt';
 
       try {
-        const saved = await downloadFile(content, filename, 'text/plain;charset=utf-8');
-        if (!saved) {
-          showCenterToast('ℹ️', '已取消导出');
-          return;
-        }
-
-        showCenterToast('📄', normalizedName + ' 信息已导出');
+        await navigator.clipboard.writeText(content);
+        showCenterToast('📋', normalizedName + ' 信息已复制到剪贴板');
       } catch (error) {
-        console.error('导出账号信息失败:', error);
-        showCenterToast('❌', '导出失败：' + error.message);
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = content;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showCenterToast('📋', normalizedName + ' 信息已复制到剪贴板');
+        } catch (fallbackError) {
+          console.error('复制账号信息失败:', fallbackError);
+          showCenterToast('❌', '复制失败：' + fallbackError.message);
+        }
       }
     }
 
