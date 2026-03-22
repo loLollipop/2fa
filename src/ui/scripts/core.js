@@ -232,6 +232,7 @@ export function getCoreCode() {
             '<div class="card-menu-dropdown" id="menu-' + secret.id + '">' +
               '<div class="menu-item" onclick="event.stopPropagation(); showQRCode(&quot;' + secret.id + '&quot;); closeAllCardMenus();">二维码</div>' +
               '<div class="menu-item" onclick="event.stopPropagation(); copyOTPAuthURL(&quot;' + secret.id + '&quot;); closeAllCardMenus();">复制链接</div>' +
+              '<div class="menu-item" onclick="event.stopPropagation(); exportSecretInfo(&quot;' + secret.id + '&quot;); closeAllCardMenus();">导出信息</div>' +
               '<div class="menu-item" onclick="event.stopPropagation(); editSecret(&quot;' + secret.id + '&quot;); closeAllCardMenus();">编辑</div>' +
               '<div class="menu-item menu-item-danger" onclick="event.stopPropagation(); deleteSecret(&quot;' + secret.id + '&quot;); closeAllCardMenus();">删除</div>' +
             '</div>' +
@@ -460,6 +461,43 @@ export function getCoreCode() {
       } catch (err) {
         console.error('复制链接失败:', err);
         showCenterToast('❌', '复制链接失败: ' + err.message);
+      }
+    }
+
+    async function exportSecretInfo(secretId) {
+      const secret = secrets.find(s => s.id === secretId);
+      if (!secret) {
+        showCenterToast('❌', '未找到密钥');
+        return;
+      }
+
+      const account = (secret.account || '').trim();
+      if (!account) {
+        showCenterToast('⚠️', '该账号没有填写邮箱或账户名');
+        return;
+      }
+
+      const normalizedName = (secret.name || '2FA').trim();
+      const safeName = normalizedName
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || '2FA';
+
+      const content = '邮箱：' + account + '\n密钥：' + secret.secret.toUpperCase();
+      const filename = safeName + '-' + account.replace(/[^a-zA-Z0-9@._-]+/g, '_') + '.txt';
+
+      try {
+        const saved = await downloadFile(content, filename, 'text/plain;charset=utf-8');
+        if (!saved) {
+          showCenterToast('ℹ️', '已取消导出');
+          return;
+        }
+
+        showCenterToast('📄', normalizedName + ' 信息已导出');
+      } catch (error) {
+        console.error('导出账号信息失败:', error);
+        showCenterToast('❌', '导出失败：' + error.message);
       }
     }
 
