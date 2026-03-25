@@ -466,34 +466,12 @@ export function getCoreCode() {
       }
 
       const normalizedName = (secret.name || '2FA').trim();
-      const type = (secret.type || 'TOTP').toUpperCase();
-      const algorithm = secret.algorithm || 'SHA1';
-      const digits = secret.digits || 6;
-      const period = secret.period || 30;
-      const counter = secret.counter || 0;
-      const otpauthURL = buildOTPAuthURL(secret);
       const contentLines = [
         '邮箱：' + account,
+        '密码：ASDFG1234567',
+        '接码网址：https://2fa.fun',
         '密钥：' + secret.secret.toUpperCase()
       ];
-
-      if (normalizedName) {
-        contentLines.push('服务：' + normalizedName);
-      }
-
-      if (type === 'HOTP' || digits !== 6 || algorithm !== 'SHA1' || period !== 30) {
-        contentLines.push('类型：' + type);
-        contentLines.push('算法：' + algorithm);
-        contentLines.push('位数：' + digits);
-
-        if (type === 'HOTP') {
-          contentLines.push('计数器：' + counter);
-        } else {
-          contentLines.push('周期：' + period);
-        }
-      }
-
-      contentLines.push('链接：' + otpauthURL);
 
       const content = contentLines.join('\\n');
 
