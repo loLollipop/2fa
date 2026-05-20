@@ -494,6 +494,13 @@ export function getCoreCode() {
       }
     }
 
+    function syncCardMenuOpenState() {
+      document.querySelectorAll('.secret-card').forEach(card => {
+        const hasOpenMenu = !!card.querySelector('.card-menu-dropdown.show');
+        card.classList.toggle('menu-open', hasOpenMenu);
+      });
+    }
+
     // 切换卡片菜单
     function toggleCardMenu(secretId) {
       const dropdown = document.getElementById('menu-' + secretId);
@@ -506,19 +513,19 @@ export function getCoreCode() {
       });
       
       dropdown.classList.toggle('show');
+      syncCardMenuOpenState();
     }
     
     function closeAllCardMenus() {
       document.querySelectorAll('.card-menu-dropdown').forEach(menu => {
         menu.classList.remove('show');
       });
+      syncCardMenuOpenState();
     }
 
     document.addEventListener('click', function(event) {
       if (!event.target.closest('.card-menu')) {
-        document.querySelectorAll('.card-menu-dropdown').forEach(menu => {
-          menu.classList.remove('show');
-        });
+        closeAllCardMenus();
       }
     });
 

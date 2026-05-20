@@ -35,6 +35,10 @@ export function getComponentStyles() {
       transform: translateY(-1px);
     }
 
+    .secret-card.menu-open {
+      z-index: 20;
+    }
+
     .secret-header {
       display: flex;
       justify-content: space-between;
